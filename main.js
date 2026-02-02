@@ -51,6 +51,7 @@ const resultText = document.getElementById('result-text');
 const resultSubtext = document.getElementById('result-subtext');
 const winnerInfo = document.getElementById('winner-info');
 const midLeaveBtn = document.getElementById('mid-leave-btn');
+const myNameDisplay = document.getElementById('my-name-display');
 
 // 初期化
 function init() {
@@ -349,6 +350,10 @@ function joinGame() {
 
     state.socket.on('hp-update', (data) => {
         if (data.id === state.socket.id) {
+            // 自分の名前情報を更新（初回のみなど）
+            if (data.name && myNameDisplay) {
+                myNameDisplay.innerText = `NAME: ${data.name}`;
+            }
             if (data.hp < state.hp) {
                 const flash = document.getElementById('damage-flash');
                 flash.classList.add('flash-active');
@@ -396,6 +401,9 @@ function startGame(data) {
             addPlayer(id, data.players[id]);
         } else {
             state.camera.position.set(data.players[id].x, 1.6, data.players[id].z);
+            if (myNameDisplay) {
+                myNameDisplay.innerText = `NAME: ${data.players[id].name}`;
+            }
         }
     }
 
@@ -438,8 +446,9 @@ function shoot() {
     const direction = new THREE.Vector3();
     state.camera.getWorldDirection(direction);
 
-    state.socket.emit('shoot', { origin, direction });
+    // 自分のクライアント側で先に表示
     showTracer(origin, direction);
+    state.socket.emit('shoot', { origin, direction });
 
     // ヒット判定
     state.raycaster.set(origin, direction);

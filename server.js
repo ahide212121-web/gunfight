@@ -121,7 +121,11 @@ io.on('connection', (socket) => {
 
     if (target && target.isAlive) {
       target.hp--;
-      io.to(roomId).emit('hp-update', { id: targetId, hp: target.hp });
+      io.to(roomId).emit('hp-update', {
+        id: targetId,
+        hp: target.hp,
+        name: target.name
+      });
 
       if (target.hp <= 0) {
         target.isAlive = false;
