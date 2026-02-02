@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GunFight - オンライン3Dバトル</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div id="app">
+        <div id="damage-flash" class="damage-flash"></div>
+        <!-- ロビー画面 -->
+        <div id="lobby" class="overlay">
+            <div class="glass-panel">
+                <h1>GunFight</h1>
+                <p class="subtitle">生き残りをかけた無人島バトル。最後の1人になれ。</p>
+                <button id="start-btn" class="btn">ゲーム開始</button>
+            </div>
+        </div>
+
+        <!-- 待機画面 -->
+        <div id="waiting" class="overlay hidden">
+            <div class="glass-panel">
+                <h2>対戦相手を待っています...</h2>
+                <p class="match-timer" id="match-timer">60</p>
+                <p class="waiting-text" id="waiting-status">参加人数: 1/10</p>
+                <p style="margin-top: 1rem; color: #a4b0be;">60秒経過するとNPCが補充されます</p>
+            </div>
+        </div>
+
+        <!-- ゲーム終了画面 -->
+        <div id="game-over" class="overlay hidden">
+            <div class="glass-panel">
+                <h2 id="result-text">YOU WIN!</h2>
+                <p class="subtitle" id="result-subtext">全ての敵を倒しました。</p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="replay-btn" class="btn">もう一度プレイ</button>
+                    <button id="exit-btn" class="btn" style="background: #57606f;">終了</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ゲームHUD -->
+        <div id="hud" class="hidden">
+            <div class="hud-top">
+                <div class="stat-box">
+                    <span class="player-count">生存: <span id="alive-count">10</span> / 10</span>
+                </div>
+                <div class="stat-box">
+                    <span id="game-status">バトル中</span>
+                </div>
+            </div>
+
+            <div id="crosshair"></div>
+
+            <div class="hud-bottom">
+                <div class="stat-box hp-container">
+                    <span>HEALTH</span>
+                    <div class="hp-bar">
+                        <div id="hp-fill" class="hp-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+</body>
+
+</html>
