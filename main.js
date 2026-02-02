@@ -49,6 +49,8 @@ const aliveCount = document.getElementById('alive-count');
 const hpFill = document.getElementById('hp-fill');
 const resultText = document.getElementById('result-text');
 const resultSubtext = document.getElementById('result-subtext');
+const winnerInfo = document.getElementById('winner-info');
+const midLeaveBtn = document.getElementById('mid-leave-btn');
 
 // 初期化
 function init() {
@@ -63,6 +65,7 @@ function init() {
     startBtn.addEventListener('click', joinGame);
     replayBtn.addEventListener('click', () => location.reload());
     exitBtn.addEventListener('click', () => location.reload());
+    midLeaveBtn.addEventListener('click', () => location.reload());
 
     window.addEventListener('resize', onWindowResize);
 
@@ -93,6 +96,11 @@ function setupScene() {
             state.controls.lock();
         }
     });
+
+    // スマホの場合はPointerLockControlsを無効化に近い状態にする
+    if (state.isMobile) {
+        state.controls.enabled = false;
+    }
 
     document.addEventListener('keydown', (e) => onKeyDown(e));
     document.addEventListener('keyup', (e) => onKeyUp(e));
@@ -373,7 +381,10 @@ function startGame(data) {
     waiting.classList.add('hidden');
     hud.classList.remove('hidden');
     state.isPlaying = true;
-    state.controls.lock();
+
+    if (!state.isMobile) {
+        state.controls.lock();
+    }
 
     // プレイヤーとNPCの生成
     for (const id in data.players) {
@@ -465,6 +476,7 @@ function endGame(data) {
     const isWinner = data.winnerId === state.socket.id;
     resultText.innerText = isWinner ? "YOU WIN!" : "GAME OVER";
     resultSubtext.innerText = isWinner ? "最後の1人として生き残りました！" : "残念ながら敗北しました。";
+    winnerInfo.innerText = `勝者: ${data.winnerName}`;
 }
 
 function onKeyDown(e) {
@@ -516,8 +528,27 @@ function animate() {
         if (state.moveForward || state.moveBackward) state.velocity.z -= state.direction.z * 100.0 * delta;
         if (state.moveLeft || state.moveRight) state.velocity.x -= state.direction.x * 100.0 * delta;
 
-        state.controls.moveRight(-state.velocity.x * delta);
-        state.controls.moveForward(-state.velocity.z * delta);
+        if (state.isMobile) {
+            // スマホ用の移動（PointerLockControlsを使わず自前で計算）
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(state.camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            const right = new THREE.Vector3(1, 0, 0);
+            right.applyQuaternion(state.camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            const moveX = -state.velocity.x * delta;
+            const moveZ = -state.velocity.z * delta;
+
+            state.camera.position.addScaledVector(forward, moveZ);
+            state.camera.position.addScaledVector(right, moveX);
+        } else {
+            state.controls.moveRight(-state.velocity.x * delta);
+            state.controls.moveForward(-state.velocity.z * delta);
+        }
 
         // 位置更新をサーバーに送信
         if (state.socket && (

@@ -51,6 +51,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomId];
     room.players[socket.id] = {
       id: socket.id,
+      name: `Player ${Object.keys(room.players).length + 1}`,
       x: Math.random() * 40 - 20,
       z: Math.random() * 40 - 20,
       y: 0,
@@ -163,6 +164,7 @@ function startGame(roomId) {
     const npcId = 'npc-' + i + '-' + Date.now();
     room.npcs[npcId] = {
       id: npcId,
+      name: `NPC ${i + 1}`,
       x: Math.random() * 80 - 40,
       z: Math.random() * 80 - 40,
       y: 0,
@@ -237,7 +239,10 @@ function checkGameStatus(roomId) {
   if (totalAlive <= 1) {
     room.status = 'finished';
     const winner = Object.values(room.players).find(p => p.isAlive) || Object.values(room.npcs).find(n => n.isAlive);
-    io.to(roomId).emit('game-over', { winnerId: winner?.id });
+    io.to(roomId).emit('game-over', {
+      winnerId: winner?.id,
+      winnerName: winner?.name || 'なし'
+    });
   }
 }
 

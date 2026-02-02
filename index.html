@@ -38,6 +38,8 @@
         <div id="game-over" class="overlay hidden">
             <div class="glass-panel">
                 <h2 id="result-text">YOU WIN!</h2>
+                <div id="winner-info"
+                    style="margin-bottom: 1.5rem; color: #ffa502; font-weight: bold; font-size: 1.2rem;"></div>
                 <p class="subtitle" id="result-subtext">全ての敵を倒しました。</p>
                 <div style="display: flex; gap: 1rem; justify-content: center;">
                     <button id="replay-btn" class="btn">もう一度プレイ</button>
@@ -55,6 +57,8 @@
                 <div class="stat-box">
                     <span id="game-status">バトル中</span>
                 </div>
+                <button id="mid-leave-btn" class="btn"
+                    style="padding: 0.5rem 1rem; font-size: 0.9rem; background: #57606f;">退出</button>
             </div>
 
             <div id="crosshair"></div>
