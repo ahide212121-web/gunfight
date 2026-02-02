@@ -28,7 +28,8 @@ const state = {
     touchY: 0,
     lookTouchId: null,
     joystickTouchId: null,
-    joystickActive: false
+    joystickActive: false,
+    lastRotationY: 0
 };
 
 // DOM要素
@@ -178,6 +179,7 @@ function setupMobileControls() {
                 const pitch = state.camera.rotation.x - dy * 0.005;
                 state.camera.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
 
+                // 修正: 視点移動をすぐに反映させるため、lastPos側の同期タイミングとは別に判定できるよう。
                 state.touchX = touch.pageX;
                 state.touchY = touch.pageY;
             }
@@ -576,11 +578,12 @@ function animate() {
             state.controls.moveForward(-state.velocity.z * delta);
         }
 
-        // 位置更新をサーバーに送信
-        if (state.socket && (
-            Math.abs(state.camera.position.x - state.lastPos.x) > 0.1 ||
-            Math.abs(state.camera.position.z - state.lastPos.z) > 0.1
-        )) {
+        // 位置・回転更新をサーバーに送信
+        const hasMoved = Math.abs(state.camera.position.x - state.lastPos.x) > 0.1 ||
+            Math.abs(state.camera.position.z - state.lastPos.z) > 0.1;
+        const hasRotated = Math.abs(state.camera.rotation.y - state.lastRotationY) > 0.05;
+
+        if (state.socket && (hasMoved || hasRotated)) {
             state.socket.emit('update-position', {
                 x: state.camera.position.x,
                 y: state.camera.position.y,
@@ -588,6 +591,7 @@ function animate() {
                 ry: state.camera.rotation.y
             });
             state.lastPos.copy(state.camera.position);
+            state.lastRotationY = state.camera.rotation.y;
         }
     }
 
