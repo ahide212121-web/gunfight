@@ -465,27 +465,30 @@ function shoot() {
 }
 
 function showTracer(origin, direction) {
-    const points = [];
-    // トレーサーの開始位置をカメラの視点（中央）に合わせる
-    const start = new THREE.Vector3(origin.x, origin.y, origin.z);
     const dir = new THREE.Vector3(direction.x, direction.y, direction.z).normalize();
 
-    // 自分のカメラの位置から出す場合、自分の画面を遮らないように少し前から開始
-    start.addScaledVector(dir, 1.0);
+    // 弾道を細長い立方体で作る
+    const length = 60;
+    const thickness = 0.05;
+    const geometry = new THREE.BoxGeometry(thickness, thickness, length);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const mesh = new THREE.Mesh(geometry, material);
 
-    points.push(start);
-    points.push(new THREE.Vector3(
-        start.x + dir.x * 60,
-        start.y + dir.y * 60,
-        start.z + dir.z * 60
-    ));
+    // 開始位置をカメラの少し前、および少し右下にずらす（銃口の位置をシミュレート）
+    const startPos = new THREE.Vector3(origin.x, origin.y, origin.z);
+    startPos.addScaledVector(dir, length / 2 + 0.5); // 中心点を配置
 
-    const geo = new THREE.BufferGeometry().setFromPoints(points);
-    const mat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
-    const line = new THREE.Line(geo, mat);
-    state.scene.add(line);
+    mesh.position.copy(startPos);
+    mesh.lookAt(origin.x + dir.x * 100, origin.y + dir.y * 100, origin.z + dir.z * 100);
 
-    setTimeout(() => state.scene.remove(line), 100);
+    state.scene.add(mesh);
+
+    // 200ms後に削除（少し長くした）
+    setTimeout(() => {
+        state.scene.remove(mesh);
+        geometry.dispose();
+        material.dispose();
+    }, 200);
 }
 
 function endGame(data) {
