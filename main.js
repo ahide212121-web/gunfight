@@ -66,6 +66,10 @@ function init() {
     replayBtn.addEventListener('click', () => location.reload());
     exitBtn.addEventListener('click', () => location.reload());
     midLeaveBtn.addEventListener('click', () => location.reload());
+    midLeaveBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        location.reload();
+    });
 
     window.addEventListener('resize', onWindowResize);
 
@@ -453,15 +457,22 @@ function shoot() {
 
 function showTracer(origin, direction) {
     const points = [];
-    points.push(new THREE.Vector3(origin.x, origin.y - 0.2, origin.z));
+    // トレーサーの開始位置をカメラの視点（中央）に合わせる
+    const start = new THREE.Vector3(origin.x, origin.y, origin.z);
+    const dir = new THREE.Vector3(direction.x, direction.y, direction.z).normalize();
+
+    // 自分のカメラの位置から出す場合、自分の画面を遮らないように少し前から開始
+    start.addScaledVector(dir, 1.0);
+
+    points.push(start);
     points.push(new THREE.Vector3(
-        origin.x + direction.x * 50,
-        origin.y + direction.y * 50,
-        origin.z + direction.z * 50
+        start.x + dir.x * 60,
+        start.y + dir.y * 60,
+        start.z + dir.z * 60
     ));
 
     const geo = new THREE.BufferGeometry().setFromPoints(points);
-    const mat = new THREE.LineBasicMaterial({ color: 0xffff00 });
+    const mat = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
     const line = new THREE.Line(geo, mat);
     state.scene.add(line);
 
@@ -470,7 +481,10 @@ function showTracer(origin, direction) {
 
 function endGame(data) {
     state.isPlaying = false;
-    state.controls.unlock();
+    if (state.controls.isLocked) {
+        state.controls.unlock();
+    }
+    hud.classList.add('hidden');
     gameOver.classList.remove('hidden');
 
     const isWinner = data.winnerId === state.socket.id;
