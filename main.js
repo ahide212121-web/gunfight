@@ -22,10 +22,20 @@ const state = {
     direction: new THREE.Vector3(),
     lastPos: new THREE.Vector3(),
     raycaster: new THREE.Raycaster(),
-    shootCooldown: 0
+    shootCooldown: 0,
+    isMobile: false,
+    touchX: 0,
+    touchY: 0,
+    lookTouchId: null,
+    joystickTouchId: null,
+    joystickActive: false
 };
 
 // DOM要素
+const mobileControls = document.getElementById('mobile-controls');
+const joystickBase = document.getElementById('joystick-base');
+const joystickStick = document.getElementById('joystick-stick');
+const shootBtn = document.getElementById('shoot-btn');
 const lobby = document.getElementById('lobby');
 const waiting = document.getElementById('waiting');
 const hud = document.getElementById('hud');
@@ -47,11 +57,18 @@ function init() {
     createIsland();
     animate();
 
+    // デバイス判定
+    state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
     startBtn.addEventListener('click', joinGame);
     replayBtn.addEventListener('click', () => location.reload());
     exitBtn.addEventListener('click', () => location.reload());
 
     window.addEventListener('resize', onWindowResize);
+
+    if (state.isMobile) {
+        setupMobileControls();
+    }
 }
 
 function setupScene() {
@@ -61,6 +78,7 @@ function setupScene() {
 
     state.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     state.camera.position.y = 1.6;
+    state.camera.rotation.order = 'YXZ';
 
     state.renderer = new THREE.WebGLRenderer({ antialias: true });
     state.renderer.setPixelRatio(window.devicePixelRatio);
@@ -71,7 +89,7 @@ function setupScene() {
     state.controls = new PointerLockControls(state.camera, document.body);
 
     state.renderer.domElement.addEventListener('click', () => {
-        if (state.isPlaying && state.isAlive) {
+        if (!state.isMobile && state.isPlaying && state.isAlive) {
             state.controls.lock();
         }
     });
@@ -79,8 +97,120 @@ function setupScene() {
     document.addEventListener('keydown', (e) => onKeyDown(e));
     document.addEventListener('keyup', (e) => onKeyUp(e));
     document.addEventListener('mousedown', (e) => {
-        if (state.controls.isLocked && state.isAlive) shoot();
+        if (!state.isMobile && state.controls.isLocked && state.isAlive) shoot();
     });
+}
+
+function setupMobileControls() {
+    mobileControls.classList.remove('hidden');
+
+    // ジョイスティック
+    joystickBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        state.joystickTouchId = touch.identifier;
+        state.joystickActive = true;
+        handleJoystick(touch);
+    }, { passive: false });
+
+    joystickBase.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (touch.identifier === state.joystickTouchId) {
+                handleJoystick(touch);
+            }
+        }
+    }, { passive: false });
+
+    const endJoystick = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === state.joystickTouchId) {
+                state.joystickActive = false;
+                state.joystickTouchId = null;
+                joystickStick.style.transform = 'translate(-50%, -50%)';
+                state.moveForward = false;
+                state.moveBackward = false;
+                state.moveLeft = false;
+                state.moveRight = false;
+            }
+        }
+    };
+
+    joystickBase.addEventListener('touchend', endJoystick);
+    joystickBase.addEventListener('touchcancel', endJoystick);
+
+    // 視点移動
+    state.renderer.domElement.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (state.lookTouchId === null) {
+                state.lookTouchId = touch.identifier;
+                state.touchX = touch.pageX;
+                state.touchY = touch.pageY;
+            }
+        }
+    }, { passive: false });
+
+    state.renderer.domElement.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (touch.identifier === state.lookTouchId) {
+                const dx = touch.pageX - state.touchX;
+                const dy = touch.pageY - state.touchY;
+
+                state.camera.rotation.y -= dx * 0.005;
+                const pitch = state.camera.rotation.x - dy * 0.005;
+                state.camera.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+
+                state.touchX = touch.pageX;
+                state.touchY = touch.pageY;
+            }
+        }
+    }, { passive: false });
+
+    const endLook = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === state.lookTouchId) {
+                state.lookTouchId = null;
+            }
+        }
+    };
+
+    state.renderer.domElement.addEventListener('touchend', endLook);
+    state.renderer.domElement.addEventListener('touchcancel', endLook);
+
+    // 射撃ボタン
+    shootBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (state.isPlaying && state.isAlive) shoot();
+    });
+}
+
+function handleJoystick(touch) {
+    const rect = joystickBase.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const dx = touch.pageX - centerX;
+    const dy = touch.pageY - centerY;
+
+    const distance = Math.min(rect.width / 2, Math.sqrt(dx * dx + dy * dy));
+    const angle = Math.atan2(dy, dx);
+
+    const stickX = Math.cos(angle) * distance;
+    const stickY = Math.sin(angle) * distance;
+
+    joystickStick.style.transform = `translate(calc(-50% + ${stickX}px), calc(-50% + ${stickY}px))`;
+
+    // 感度調整（遊びを持たせる）
+    const threshold = rect.width * 0.15;
+    state.moveForward = dy < -threshold;
+    state.moveBackward = dy > threshold;
+    state.moveLeft = dx < -threshold;
+    state.moveRight = dx > threshold;
 }
 
 function setupLighting() {
@@ -372,7 +502,7 @@ function onWindowResize() {
 function animate() {
     requestAnimationFrame(animate);
 
-    if (state.controls.isLocked && state.isAlive) {
+    if ((state.isMobile || state.controls.isLocked) && state.isAlive) {
         const time = performance.now();
         const delta = 0.1; // 固定デルタで簡易化
 

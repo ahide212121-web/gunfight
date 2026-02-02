@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>GunFight - オンライン3Dバトル</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,6 +66,14 @@
                         <div id="hp-fill" class="hp-fill"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- スマホ用コントローラー -->
+            <div id="mobile-controls" class="hidden">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
+                <button id="shoot-btn">FIRE</button>
             </div>
         </div>
     </div>
